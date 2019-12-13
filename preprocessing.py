@@ -106,8 +106,82 @@ np.isnan(df['CID']).drop_duplicates()
 #- Variables with possible discrepancies identified: Age, FirstPYear
 
 
+
+
+
+
+
 #***
-#***1.1.4 Variable transformations and Missing Values Treatment***
+#***1.1.4 Coherence/discrepancy verification***
+#***
+#Strategy changed. Missing values treatment was first, but in the process it was discovered
+#that, to use some missing values treatment techniques, data should already be somewhat free
+#of inconsistencies. Basically, missing values treatment can be affected by coherence verification
+#while the latter is not affected by the first
+
+##FirstPYear before BirthYear
+cvFirstPYearBirthYear = df.loc[~pd.isnull(df['FirstPYear'])]
+cvFirstPYearBirthYear = cvFirstPYearBirthYear.loc[~pd.isnull(cvFirstPYearBirthYear['BirthYear'])]
+
+cvFirstPYearBirthYear.loc[cvFirstPYearBirthYear['FirstPYear']<cvFirstPYearBirthYear['BirthYear']]
+#1997 of 10252 (19.48% of non FirstPYear or BirthYear null observations)
+#1997 of 10296 (19.4% of all observations)
+
+
+##Age < 18 or Age > 120
+#Year of db is 2016
+#BirthYear > 1998 or BirthYear < 1896
+
+#------ <18 -------------
+cvBirthYear = df.loc[~pd.isnull(df['BirthYear'])]
+cvBirthYear.loc[cvBirthYear['BirthYear'] > 1998]
+#116 of 10279 (1.129% of non BirthYear null observations)
+#116 of 10296 (1.127% of all observations)
+
+cvBirthYear['BirthYear'].loc[cvBirthYear['BirthYear'] > 1998].drop_duplicates()
+#BirthYear: 2000, 1999, 2001
+#16, 17, 15 yo
+
+#------- >120 ------------
+cvBirthYear.loc[cvBirthYear['BirthYear'] < 1896]
+#1 of 10279 (0.01 % of non BirthYear null observations)
+#1 of 10296 (0.01 % of all observations)
+#BirthYear: 1028
+#988 yo
+
+##Premium Values > YearlySalary
+#Creating of YearlySalary var
+df['YearlySalary'] = df['MonthSalary']*14
+
+nullPremiumsAsZero = df.copy(deep=True)
+nullPremiumsAsZero['Motor Premium'].fillna(0, inplace=True)
+nullPremiumsAsZero['Household Premium'].fillna(0, inplace=True)
+nullPremiumsAsZero['Health Premium'].fillna(0, inplace=True)
+nullPremiumsAsZero['Life Premium'].fillna(0, inplace=True)
+nullPremiumsAsZero['Work Premium'].fillna(0, inplace=True)
+nullPremiumsAsZero = nullPremiumsAsZero.loc[~nullPremiumsAsZero['YearlySalary'].isna()]
+
+#Creation of TotalPremiums var
+df['TotalPremiums'] = nullPremiumsAsZero['Motor Premium'] + nullPremiumsAsZero['Household Premium'] + nullPremiumsAsZero['Health Premium'] + nullPremiumsAsZero['Life Premium'] + nullPremiumsAsZero['Work Premium'] 
+
+
+nullPremiumsAsZero.loc[nullPremiumsAsZero['YearlySalary']<nullPremiumsAsZero['TotalPremiums']]
+#1 of 10260 (0.01 % of non YearlySalary null observations)
+#1 of 10296 (0.01 % of all observations)
+#Health Premium is extremely high (28272), Total Premiums is 2x YearlySalary
+
+
+
+
+
+
+
+
+
+
+
+#***
+#***1.1.5 Variable transformations and Missing Values Treatment***
 #***
 #"Firstly, understand that there is NO good way to deal with missing data"
 #https://towardsdatascience.com/how-to-handle-missing-data-8646b18db0d4
@@ -225,6 +299,8 @@ df['Household Premium'].fillna(0, inplace=True)
 df['Health Premium'].fillna(0, inplace=True)
 df['Life Premium'].fillna(0, inplace=True)
 
+#falta work premium
+
 
 ##Children
 #convert to a boolean variable
@@ -238,16 +314,24 @@ df['Children'] = df['Children'].astype(bool)
 
 
 ##Living Area
-##MonthSalary
+df['LivingArea'].isna().sum()
+#No missing values
 
+##MonthSalary
+df['MonthSalary'].isna().sum()
+#-----------------decide what to do---------------------
 
 
 ##FirstPYear
 df['FirstPYear'].isna().sum()
 #30 of the 10296 are NaN (0.29%)
 df.loc[df['FirstPYear'].isna()]
+#-----------------decide what to do---------------------
+
 
 ##Age
+df['Age'].isna().sum()
+#-----------------decide what to do---------------------
 
 
 ##CustMonVal
@@ -289,9 +373,6 @@ df.loc[df['Educ']==0, 'Educ'].count()
 
 
 
-#***
-#***1.1.5 Coherence/discrepancy verification***
-#***
 
 
 #manipulate existing variables
