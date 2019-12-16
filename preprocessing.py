@@ -134,9 +134,40 @@ cvFirstPYearBirthYear.loc[cvFirstPYearBirthYear['FirstPYear']<cvFirstPYearBirthY
 
 #------ <18 -------------
 cvBirthYear = df.loc[~pd.isnull(df['BirthYear'])]
-cvBirthYear.loc[cvBirthYear['BirthYear'] > 1998]
+cvBirthYearM18 = cvBirthYear.loc[cvBirthYear['BirthYear'] > 1998]
 #116 of 10279 (1.129% of non BirthYear null observations)
 #116 of 10296 (1.127% of all observations)
+
+cvBirthYearM18['Children'].sum()/116
+
+#An analysis of this observations reveals that:
+#- All have Educ = 1
+#- 75% has children
+#- All have salary
+#- All have insurance policies in each category (including motor, household and work compensation)
+#(- and all have age <18)
+
+#The data suggests that these are customers, but:
+#- <18 don't have insurance
+#- Not expected that <18 have children, salary, car and house
+
+#This and the analysis from FirstPYear before BirthYear may suggest that the variable age is not to be trusted
+#Although variables originated from user imput are less trustable that variables derived from system generated values,(...)
+#(...) age is considerably important in the insurance context, given that age is considered not only in the calculation of (...)
+#(...) insurance premiums but also in the decision of granting insurance to the customer.
+#Nevertheless, tt is not possible, without more data and deeper context from the business, to clearly point out (...)
+#that the problem is totally due to the variable age, given that FirstPYear also has discrepancies (missing values (...)
+#(...) and non-date/impossible date values), which denotes the existence of errors in this variable, further (...)
+#(...) confirming that there is no clear way to say that the variable age is responsible for every discrepancy.
+#This reveals a low degree of trustability of the dataset provided, which inevitably confers a lower (...)
+#(...) degree of trustability to the analysis that intended, while also considerably limiting (...)
+#(...) the diversity and completeness of the said analysis, since age segmentation could be crucial (...)
+#(...) to provide a complete analysis.
+#Despite being a highly important dimension of the analysis, it is not possible to trust in the age (...)
+#(...) variable, since there is not enough information to confirm that other age/birthdate values (...)
+#(...) are not incorrect too.
+#This is bad, really bad, and needs further scrutiny in the report.
+
 
 cvBirthYear['BirthYear'].loc[cvBirthYear['BirthYear'] > 1998].drop_duplicates()
 #BirthYear: 2000, 1999, 2001
@@ -148,6 +179,12 @@ cvBirthYear.loc[cvBirthYear['BirthYear'] < 1896]
 #1 of 10296 (0.01 % of all observations)
 #BirthYear: 1028
 #988 yo
+
+
+removedOrModified = {'dataWithAge': df.copy(deep=True)}
+
+df = df.drop(['Age', 'BirthYear'], axis=1)
+
 
 ##Premium Values > YearlySalary
 #Creating of YearlySalary var
@@ -169,6 +206,17 @@ nullPremiumsAsZero.loc[nullPremiumsAsZero['YearlySalary']<nullPremiumsAsZero['To
 #1 of 10260 (0.01 % of non YearlySalary null observations)
 #1 of 10296 (0.01 % of all observations)
 #Health Premium is extremely high (28272), Total Premiums is 2x YearlySalary
+
+#This shows, once again, the incompleteness of the db. This observation reveals a scenario which is (...)
+#(...) possible, depending on the context, in a variety of forms. For example, this Health policy (...)
+#(...) could be of a family, whose spouse of the policy taker has a much higher income. Since there (...)
+#(...) is no information about the nature of the customer (company or particular customer), this could (...)
+#(...) also be a health policy of a company for all the employees, assuming that:
+#There are real cases of insurance companies that require the exact same variables for companies or particular(...)
+#(...) customers, with no stated practice for the filling of some variables that are not applicable for company customers.
+#In this (real) cases, children is marked as 0, income is filled with profit, education is not filled, etc.
+#Nevertheless, and despite not removing this observation, it will be appended to the(...)
+#(...) removedOrModified dictionary, for further analysis.
 
 
 
@@ -259,8 +307,8 @@ missingValuesForVar.loc[missingValuesForVar>0]
 
 ##Treating observations with 3 or 4 missing values
 #Treatment: Removal
-removedOrModified = {'threeMissingValuesInSameObservation': df.loc[df.index.isin(missingValuesForRows.loc[missingValuesForRows[0]==3].index)]}
-removedOrModified['fourMissingValuesInSameObservation'] = df.loc[df.index.isin(missingValuesForRows.loc[missingValuesForRows[0]==4].index)]
+removedOrModified['threeMissingValuesInSameObservation'] = df.loc[df.index.isin(missingValuesForRows.loc[missingValuesForRows[0]==3].index)].copy(deep=True)
+removedOrModified['fourMissingValuesInSameObservation'] = df.loc[df.index.isin(missingValuesForRows.loc[missingValuesForRows[0]==4].index)].copy(deep=True)
 
 #For CID 488, it is important to note that 2 of the 3 missing values are from Premium variables, that are going to be treated after according
 #with specific assumptions. For this reason, this record is not going to be excluded just yet.
@@ -288,10 +336,10 @@ correctedObservations_premiums.count()
 #22 observations are going to be corrected due to missing values in premium variables 
 #(not counting the 13 observations already excluded that had missing values in premium variables)
 
-removedOrModified['motorPremiumNull'] = df.loc[~df.index.isin(df.loc[pd.isnull(df['Motor Premium'])].index)]  
-removedOrModified['householdPremiumNull'] = df.loc[~df.index.isin(df.loc[pd.isnull(df['Household Premium'])].index)]  
-removedOrModified['healthPremiumNull'] = df.loc[~df.index.isin(df.loc[pd.isnull(df['Health Premium'])].index)]  
-removedOrModified['lifePremiumNull'] = df.loc[~df.index.isin(df.loc[pd.isnull(df['Life Premium'])].index)]  
+removedOrModified['motorPremiumNull'] = df.loc[~df.index.isin(df.loc[pd.isnull(df['Motor Premium'])].index)].copy(deep=True) 
+removedOrModified['householdPremiumNull'] = df.loc[~df.index.isin(df.loc[pd.isnull(df['Household Premium'])].index)].copy(deep=True)  
+removedOrModified['healthPremiumNull'] = df.loc[~df.index.isin(df.loc[pd.isnull(df['Health Premium'])].index)].copy(deep=True)  
+removedOrModified['lifePremiumNull'] = df.loc[~df.index.isin(df.loc[pd.isnull(df['Life Premium'])].index)].copy(deep=True)  
 
 
 df['Motor Premium'].fillna(0, inplace=True)
@@ -299,6 +347,7 @@ df['Household Premium'].fillna(0, inplace=True)
 df['Health Premium'].fillna(0, inplace=True)
 df['Life Premium'].fillna(0, inplace=True)
 
+#!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 #falta work premium
 
 
@@ -307,7 +356,7 @@ df['Life Premium'].fillna(0, inplace=True)
 #To minimize the data loss (despite being only 0.2% of all observations):
 #- It is more plausible to assume that, in case of missing value, there is no children
 
-removedOrModified['noChildrenInfo'] = df.loc[pd.isnull(df['Children'])]
+removedOrModified['noChildrenInfo'] = df.loc[pd.isnull(df['Children'])].copy(deep=True)
 df['Children'].fillna(0, inplace=True)
 
 df['Children'] = df['Children'].astype(bool)
