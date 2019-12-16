@@ -45,7 +45,7 @@ df['Children'].drop_duplicates()
 df['Children'].isna().sum()
 #21 of the 10296 are NaN (0.2%)
 df.loc[df['Children']==0, 'Children'].count()
-#3034 of the 10296 don't have children
+#3013 of the 10296 don't have children
 df.loc[df['Children']==1, 'Children'].count()
 #7262 of the 10296 have children
 
@@ -56,8 +56,7 @@ df['Household Premium'].describe()
 df['Health Premium'].describe()
 df['Life Premium'].describe()
 df['Work Premium'].describe()
-#it is difficult to analyze without proper business background, but using common sense,
-#...max values are too high for an annual premium
+#it is difficult to analyze without proper business background
 
 
 
@@ -70,6 +69,9 @@ df['FirstPYear'].drop_duplicates()
 ##MonthSalary
 df['MonthSalary'].describe()
 #Not enough to identify potential errors
+
+df.loc[df['MonthSalary']<618.33]
+
 
 ##LivingArea
 df['LivingArea'].drop_duplicates()
@@ -118,6 +120,16 @@ np.isnan(df['CID']).drop_duplicates()
 #that, to use some missing values treatment techniques, data should already be somewhat free
 #of inconsistencies. Basically, missing values treatment can be affected by coherence verification
 #while the latter is not affected by the first
+
+
+##MonthSalary
+#Salaries below the minimum wage are possible, and without context, it is impossible to know (...)
+#(...) if this value is a salary (particular customer) or profit (company customer).
+#Nevertheless, it is important to analyze each of these cases, in order to determine if this customers (...)
+#(...) can be considered in risk for not being able to pay the premiums.
+removedOrModified = {'incomeBelowMinimumWage': df.loc[df['MonthSalary']<618.33].copy(deep=True)}
+
+
 
 ##FirstPYear before BirthYear
 cvFirstPYearBirthYear = df.loc[~pd.isnull(df['FirstPYear'])]
@@ -180,15 +192,12 @@ cvBirthYear.loc[cvBirthYear['BirthYear'] < 1896]
 #BirthYear: 1028
 #988 yo
 
-
-removedOrModified = {'dataWithAge': df.copy(deep=True)}
+removedOrModified['dataWithAge'] = df.copy(deep=True)
 
 df = df.drop(['Age', 'BirthYear'], axis=1)
 
 
 ##Premium Values > YearlySalary
-#Creating of YearlySalary var
-df['YearlySalary'] = df['MonthSalary']*14
 
 nullPremiumsAsZero = df.copy(deep=True)
 nullPremiumsAsZero['Motor Premium'].fillna(0, inplace=True)
@@ -196,10 +205,10 @@ nullPremiumsAsZero['Household Premium'].fillna(0, inplace=True)
 nullPremiumsAsZero['Health Premium'].fillna(0, inplace=True)
 nullPremiumsAsZero['Life Premium'].fillna(0, inplace=True)
 nullPremiumsAsZero['Work Premium'].fillna(0, inplace=True)
+nullPremiumsAsZero['YearlySalary'] = nullPremiumsAsZero['MonthSalary']*14
 nullPremiumsAsZero = nullPremiumsAsZero.loc[~nullPremiumsAsZero['YearlySalary'].isna()]
 
-#Creation of TotalPremiums var
-df['TotalPremiums'] = nullPremiumsAsZero['Motor Premium'] + nullPremiumsAsZero['Household Premium'] + nullPremiumsAsZero['Health Premium'] + nullPremiumsAsZero['Life Premium'] + nullPremiumsAsZero['Work Premium'] 
+nullPremiumsAsZero['TotalPremiums'] = nullPremiumsAsZero['Motor Premium'] + nullPremiumsAsZero['Household Premium'] + nullPremiumsAsZero['Health Premium'] + nullPremiumsAsZero['Life Premium'] + nullPremiumsAsZero['Work Premium'] 
 
 
 nullPremiumsAsZero.loc[nullPremiumsAsZero['YearlySalary']<nullPremiumsAsZero['TotalPremiums']]
@@ -214,17 +223,26 @@ nullPremiumsAsZero.loc[nullPremiumsAsZero['YearlySalary']<nullPremiumsAsZero['To
 #(...) also be a health policy of a company for all the employees, assuming that:
 #There are real cases of insurance companies that require the exact same variables for companies or particular(...)
 #(...) customers, with no stated practice for the filling of some variables that are not applicable for company customers.
-#In this (real) cases, children is marked as 0, income is filled with profit, education is not filled, etc.
+#In this (real) cases, children is marked as 0, income is filled with profit, education is not filled, etc. (...)
+#(...) and the only way to tell what kind of customer is is to check the NIF (not present in this dataset)
 #Nevertheless, and despite not removing this observation, it will be appended to the(...)
 #(...) removedOrModified dictionary, for further analysis.
 
+removedOrModified['totalPremiumsMuchHigherThanSalary'] = nullPremiumsAsZero.loc[nullPremiumsAsZero['YearlySalary']<nullPremiumsAsZero['TotalPremiums']].copy(deep=True)
 
+##FirstPYear
+df.loc[df['FirstPYear']>2016]
+#Since the clustering analysis will have a narrow base of observations to work with, it is better (...)
+#(...) to exclude this observation, given the identified error and the difficulty of accuratly (...)
+#(...) predicting the true value for FirstPYear of this observation
+removedOrModified['impossibleFirstPYear'] = df.loc[df['FirstPYear']>2016].copy(deep=True)
+df.drop([9294])
 
+##ClaimsRate
+#Amount paid by the insurance company (€)/ Premiums (€)  
+#(In the last two years)
 
-
-
-
-
+#Not possible to do coherence verification with the existing data.
 
 
 
@@ -236,8 +254,6 @@ nullPremiumsAsZero.loc[nullPremiumsAsZero['YearlySalary']<nullPremiumsAsZero['To
 
 
 
-##Removing the variable "BirthYear"
-df = df.drop(columns=['BirthYear'])
 
 ##Assessing the percentage of missing values by observation
 df = df.reset_index()
@@ -247,8 +263,8 @@ missingValuesForRows = df.isnull().sum(axis=1)
 missingValuesForRows = pd.DataFrame(missingValuesForRows)
 missingValuesForRows.drop_duplicates()
 
-#13 variables (excluding customer id)
-#for rows with 3 or 4 variables with missing values, the said row has 23% or 30% of missing values
+#12 variables (excluding customer id)
+#for rows with 3 or 4 variables with missing values, the said row has 25% or 33% of missing values
 #as said in class, this threshold could be enough to exclude this observations (above 20% of missing values, consider excluding the observation)
 missingValuesForRows.loc[missingValuesForRows[0]==3].count()     
 missingValuesForRows.loc[missingValuesForRows[0]==4].count()
@@ -301,9 +317,8 @@ missingValuesForVar.loc[missingValuesForVar>0]
 ##
 #First treat observations with 3 or 4 missing values (because it's only possible to treat them if they are first)
 #Then treat premiums
-#Then treat variables with no identified discrepancies (because, if other vars need to 
-#use this vars for prediction, they have no missing values and no identified discrepancies)
-#Then treat variables with identified discrepancies
+#Then the rest
+
 
 ##Treating observations with 3 or 4 missing values
 #Treatment: Removal
@@ -327,28 +342,30 @@ df = df.loc[~df.index.isin(missingValuesForRows.loc[missingValuesForRows[0]==4].
 #So, the safest assumption to make, and trying to avoid removing observations, is that missing information about
 #premium values is due to that premium value being 0 (non existent)
 
+
 correctedObservations_premiums = df.loc[pd.isnull(df['Motor Premium'])]
-correctedObservations_premiums.append(df.loc[pd.isnull(df['Household Premium'])])
-correctedObservations_premiums.append(df.loc[pd.isnull(df['Health Premium'])])
-correctedObservations_premiums.append(df.loc[pd.isnull(df['Life Premium'])])
-correctedObservations_premiums = correctedObservations_premiums['CID'].drop_duplicates()
+correctedObservations_premiums = correctedObservations_premiums.append(df.loc[pd.isnull(df['Household Premium'])])
+correctedObservations_premiums = correctedObservations_premiums.append(df.loc[pd.isnull(df['Health Premium'])])
+correctedObservations_premiums = correctedObservations_premiums.append(df.loc[pd.isnull(df['Life Premium'])])
+correctedObservations_premiums = correctedObservations_premiums.append(df.loc[pd.isnull(df['Work Premium'])])
+correctedObservations_premiums  = correctedObservations_premiums['CID'].drop_duplicates()
 correctedObservations_premiums.count()
-#22 observations are going to be corrected due to missing values in premium variables 
+#212 of 10282 observations (2%) are going to be corrected due to missing values in premium variables 
 #(not counting the 13 observations already excluded that had missing values in premium variables)
 
-removedOrModified['motorPremiumNull'] = df.loc[~df.index.isin(df.loc[pd.isnull(df['Motor Premium'])].index)].copy(deep=True) 
-removedOrModified['householdPremiumNull'] = df.loc[~df.index.isin(df.loc[pd.isnull(df['Household Premium'])].index)].copy(deep=True)  
-removedOrModified['healthPremiumNull'] = df.loc[~df.index.isin(df.loc[pd.isnull(df['Health Premium'])].index)].copy(deep=True)  
-removedOrModified['lifePremiumNull'] = df.loc[~df.index.isin(df.loc[pd.isnull(df['Life Premium'])].index)].copy(deep=True)  
 
+removedOrModified['motorPremiumNull'] = df.loc[df.index.isin(df.loc[pd.isnull(df['Motor Premium'])].index)].copy(deep=True) 
+removedOrModified['householdPremiumNull'] = df.loc[df.index.isin(df.loc[pd.isnull(df['Household Premium'])].index)].copy(deep=True)  
+removedOrModified['healthPremiumNull'] = df.loc[df.index.isin(df.loc[pd.isnull(df['Health Premium'])].index)].copy(deep=True)  
+removedOrModified['lifePremiumNull'] = df.loc[df.index.isin(df.loc[pd.isnull(df['Life Premium'])].index)].copy(deep=True)  
+removedOrModified['workPremiumNull'] = df.loc[df.index.isin(df.loc[pd.isnull(df['Work Premium'])].index)].copy(deep=True)  
 
+#household has 0 missing values
 df['Motor Premium'].fillna(0, inplace=True)
-df['Household Premium'].fillna(0, inplace=True)
 df['Health Premium'].fillna(0, inplace=True)
 df['Life Premium'].fillna(0, inplace=True)
+df['Work Premium'].fillna(0, inplace=True)
 
-#!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-#falta work premium
 
 
 ##Children
@@ -366,22 +383,53 @@ df['Children'] = df['Children'].astype(bool)
 df['LivingArea'].isna().sum()
 #No missing values
 
+
+##Correlation Matrix for a better understanding to decide to do or not to do inputations
+corrMatrix(df)
+
+
+##Educ
+#Transform missing values in "Educ" to "0" and convert "Educ" to a numerical variable
+#0 - Missing
+#1 - Basic
+#2 - High School
+#3 - BSc/MSc
+#4 - PhD --> Goes to 3, and 3 becomes Higher Education
+
+#Missing values are now marked with 0
+df.loc[df['Educ'].isnull(), 'Educ'] = "0"
+
+for ind, i in enumerate(df['Educ'].drop_duplicates(), start=0):
+    df.loc[df['Educ']==i, 'Educ'] = int(i[0])
+
+df.loc[df['Educ']==4]
+
+df.loc[df['Educ']==0, 'Educ'].count()
+
+
+
+
+
+
+
 ##MonthSalary
-df['MonthSalary'].isna().sum()
-#-----------------decide what to do---------------------
+#With the data available, it is 
+
+
 
 
 ##FirstPYear
-df['FirstPYear'].isna().sum()
-#30 of the 10296 are NaN (0.29%)
-df.loc[df['FirstPYear'].isna()]
-#-----------------decide what to do---------------------
+#Missing values are 0.3% of total observations
+#And it would not be cautious to predict values for this variable
+#There is no plausible justification for this missing values (it was not due to intentional (...)
+#(...) non disclosure of data, or lack of data.). 
+#Most probable of being Missing Completely at Random (MCAR): 
+#The fact that a certain value is missing has nothing to do with its hypothetical (...)
+#(...) value and with the values of other variables
+#Best option is to remove
 
-
-##Age
-df['Age'].isna().sum()
-#-----------------decide what to do---------------------
-
+removedOrModified['noFirstPYearinfo'] = df.loc[pd.isnull(df['FirstPYear'])].copy(deep=True)
+df = df.loc[~pd.isnull(df['FirstPYear'])].copy(deep=True) 
 
 ##CustMonVal
 #No missing values
@@ -390,31 +438,6 @@ df['Age'].isna().sum()
 #No missing values
 
 
-#---------------------------------------------------------------------------
-##Transform missing values in "Educ" to "0" and convert "Educ" to a numerical variable
-#Since KNN is the chosen method to deal with missing values, some precautions are necessary:
-#- KNN will use other variables, so missing values and discrepancies in those variables must be dealt with beforehand
-
-
-#Missing values are now marked with 0
-df.loc[df['Educ'].isnull(), 'Educ'] = "0"
-
-for ind, i in enumerate(df['Educ'].drop_duplicates(), start=0):
-    df.loc[df['Educ']==i, 'Educ'] = int(i[0])
-
-
-df.loc[df['Educ']==0, 'Educ'].count()
-#17 of the 10296 are NaN (0.16%)
-#Imputation of categorical variables:
-#Missing values can be treated as a separate category by itself. We can create another category for the missing values and use them as a different level. This is the simplest method.
-#or
-#KNN (K Nearest Neighbors) --> Consider age and monthsalary
-#https://towardsdatascience.com/how-to-handle-missing-data-8646b18db0d4
-#Use KNN
-
-
-#KNN
-#---------------------------------------------------------------------------
 
 
 
@@ -427,3 +450,20 @@ df.loc[df['Educ']==0, 'Educ'].count()
 #manipulate existing variables
 #create new variables
 
+#During the thought for verifying this variable, it became clear that the amount paid by the insurance (...)
+#(...) company could play a different role of the claims rate in the analysis.
+#Then, given that this rate is for two years, it is possible to obtain the value paid by (...)
+#(...) the insurance company in the last two years.
+#(Given that ClaimsRate is for every type of policy)
+
+df.columns
+df['x'] = df['ClaimsRate'] * 2 * df['TotalPremiums']
+
+#Creation of TotalPremiums var
+df['TotalPremiums'] = nullPremiumsAsZero['Motor Premium'] + nullPremiumsAsZero['Household Premium'] + nullPremiumsAsZero['Health Premium'] + nullPremiumsAsZero['Life Premium'] + nullPremiumsAsZero['Work Premium'] 
+
+#Creating of YearlySalary var
+df['YearlySalary'] = df['MonthSalary']*14
+
+
+#create ratios for premiums

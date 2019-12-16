@@ -10,6 +10,9 @@ import sqlite3
 import pandas as pd
 import numpy as np
 from sklearn.neighbors import KNeighborsClassifier
+import seaborn as sb
+from matplotlib import pyplot as plt
+
 
 
 pd.set_option('display.max_columns', 500)
