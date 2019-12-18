@@ -237,7 +237,13 @@ df.loc[df['FirstPYear']>2016]
 #(...) to exclude this observation, given the identified error and the difficulty of accuratly (...)
 #(...) predicting the true value for FirstPYear of this observation
 removedOrModified['impossibleFirstPYear'] = df.loc[df['FirstPYear']>2016].copy(deep=True)
-df.drop([9294])
+df = df.drop([9294])
+
+df['FirstPYear'].max()
+#Data indicates that there is not a single insurance policy made after 1998. This is something to check.
+#Since we are dealing with aggregated data, this means that there were no new customers since 1998.
+#Is there a new db with more information? Is this an error?
+
 
 ##ClaimsRate
 #Amount paid by the insurance company (€)/ Premiums (€)  
@@ -387,6 +393,8 @@ df['LivingArea'].isna().sum()
 
 ##Correlation Matrix for a better understanding 
 corrMatrix(df)
+#-0.99 correlation between CMV and Claims Rate
+#what to do, what to do, what to do
 
 
 ##Educ
@@ -404,7 +412,7 @@ for ind, i in enumerate(df['Educ'].drop_duplicates(), start=0):
     df.loc[df['Educ']==i, 'Educ'] = int(i[0])
 
 del ind, i
-df.loc[df['Educ']==4] = 3
+df.loc[df['Educ']==4, 'Educ'] = 3
 
 missingEduc = df.loc[df['Educ']==0]
 #interesting how the vast majority of records with missing values in Educ have missing values in FirstPYear
@@ -431,15 +439,17 @@ df = df.loc[df['Educ']!=0]
 #(...) don’t want to reveal their ages! Here the missing value in age variable is impacted by gender variable)
 
 
-#predict using educ or fill with mean
+#fill with median
+#There isn't enough variables to accuratly predict values for MonthSalary
+#Given what was said in the introduction below ##MonthSalary, observations must not be removed
+#To minimize the impact of this missing values, the best is to fill missing values with the median
+
 df['MonthSalary'].mean()
 df['MonthSalary'].describe()
-df['MonthSalary'].median()
+df['MonthSalary'].median() #2501
 
 
-
-#media ou mediana
-
+df['MonthSalary'].fillna((df['MonthSalary'].median()), inplace=True)
 
 ##FirstPYear
 #Missing values are 0.3% of total observations
@@ -459,6 +469,82 @@ df = df.loc[~pd.isnull(df['FirstPYear'])]
 
 ##ClaimsRate
 #No missing values
+
+
+
+#***
+#***1.1.6 Outlier Treatment***
+#***
+#-------------------------------------------
+#checking obsv that are outliers for more than 1 variable
+#DO THIS!!!!
+#-------------------------------------------
+
+
+##IQR
+
+Q1 = df.quantile(0.25)
+Q3 = df.quantile(0.75)
+IQR = Q3 - Q1
+outdf = df[(df < (Q1 - 1.5 * IQR)) |(df > (Q3 + 1.5 * IQR))]
+
+
+#Number of observations that fall beyond the defined thresholds, by variable
+
+for cv in outdf.columns.values:
+    if len(outdf[cv].dropna())>0:
+        print(cv)
+        print(str(len(outdf[cv].dropna())) + " out of " + str(len(outdf[cv])) + " (" + str(round(len(outdf[cv].dropna())/len(outdf[cv])*100,2)) + "%)")
+        print("---------------------------------------------------------")
+
+
+##Boxplots
+
+sb.boxplot(x = df['Motor Premium'], orient='h', whis=10) #>2000
+sb.boxplot(x = df['Household Premium'], orient='h', whis=5) #>2000 ou >3000
+sb.boxplot(x = df['Health Premium'], orient='h', whis=5) #>500
+sb.boxplot(x = df['Life Premium'], orient='h', whis=5) #>300 ou >350
+sb.boxplot(x = df['Work Premium'], orient='h', whis=5) #>250 ou >300
+sb.boxplot(x = df['ClaimsRate'], orient='h', whis=5)
+sb.boxplot(x = df['MonthSalary'], orient='h', whis=5) #>5k ou >10k
+sb.boxplot(x = df['CustMonVal'], orient='h', whis=5)
+
+
+motorOutliers = df.loc[df['Motor Premium']>2000] #6 observations
+#houseOutlier = df.loc[df['Household Premium']>?] 
+healthOutliers = df.loc[df['Health Premium']>500] #4 observations
+lifeOutliers = df.loc[df['Life Premium']>300] #15 observations
+workOutliers = df.loc[df['Work Premium']>400] #5 observations
+#claimsOutliers
+monthSalaryOutliers = df.loc[df['MonthSalary']>5500] #2 observations
+
+#CMV
+#https://www.irmi.com/term/insurance-definitions/indemnification
+#CMV is highly affected by indemnification. If it occours, CMV most likely will drop below 0
+#This variable is only really useful for cases where no indemnification has occured.
+
+teste = df.loc[df['CustMonVal']<2500]
+teste = teste.loc[teste['CustMonVal']>-10000]
+sb.boxplot(x = teste['CustMonVal'], orient='h', whis=5)
+del teste
+teste = df.loc[df['CustMonVal']>2500]
+del teste
+
+
+#Cases where CMV is very high denote clear outliers, given high premiums and possibly no indemnifications
+#Seems like a very volatile variable
+#Nevertheless, it inclues information about claims (due to indemnifications), which could be more useful (...)
+#(...) to the overall clustering and analysis than Claims Rate, given that claims rate is for a 2 year period only
+
+
+
+
+#custMonValOutliers = df.loc[df['CustMonVal']>2500]
+#custMonValOutliers = df.loc[df['CustMonVal']<-5000]
+
+
+
+
 
 
 
