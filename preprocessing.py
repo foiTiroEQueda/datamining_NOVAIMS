@@ -241,8 +241,11 @@ df = df.drop([9294])
 
 df['FirstPYear'].max()
 #Data indicates that there is not a single insurance policy made after 1998. This is something to check.
-#Since we are dealing with aggregated data, this means that there were no new customers since 1998.
+#Since we are dealing with aggregated data, this means that there were no new customers since 1998. NOT NECESSARILY
 #Is there a new db with more information? Is this an error?
+
+#The company might have given this on purpose, or maybe this is an old db that they though of segmenting
+#Calculate years as customer relative to 1998, and not to 2016
 
 
 ##ClaimsRate
@@ -544,7 +547,10 @@ del teste
 
 
 
-
+#-------------------------------------------------------
+#Drop ClaimsRate (time period too short when compared with CMV)
+#And CMV inclues Claims, so...
+#-------------------------------------------------------
 
 
 

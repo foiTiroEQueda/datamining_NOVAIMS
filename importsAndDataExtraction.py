@@ -20,6 +20,7 @@ pd.set_option('display.max_columns', 500)
 
 #**************************** 0.2 DATA EXTRACTION ****************************
 #conection to the db
+#replace the string value "my_path" to the path of the db in your pc
 my_path = 'C:/IMS_Mestrado/1oAno_1oSemestre/DataMining/Projeto/Materials/insurance.db'
 con = sqlite3.connect(my_path)
 cursor = con.cursor()
