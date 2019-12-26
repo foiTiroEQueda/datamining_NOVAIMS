@@ -478,10 +478,6 @@ df = df.loc[~pd.isnull(df['FirstPYear'])]
 #***
 #***1.1.6 Outlier Treatment***
 #***
-#-------------------------------------------
-#checking obsv that are outliers for more than 1 variable
-#DO THIS!!!!
-#-------------------------------------------
 
 
 ##IQR
@@ -500,25 +496,68 @@ for cv in outdf.columns.values:
         print(str(len(outdf[cv].dropna())) + " out of " + str(len(outdf[cv])) + " (" + str(round(len(outdf[cv].dropna())/len(outdf[cv])*100,2)) + "%)")
         print("---------------------------------------------------------")
 
+#Take a better look at household, life and work
 
 ##Boxplots
 
+
+#----------
 sb.boxplot(x = df['Motor Premium'], orient='h', whis=10) #>2000
-sb.boxplot(x = df['Household Premium'], orient='h', whis=5) #>2000 ou >3000
+
+#----------
+sb.boxplot(x = df['Household Premium'], orient='h', whis=5) #>2000
+
+testedf = df.copy(deep=True)
+testedf = testedf.loc[testedf['Household Premium']<2000]
+sb.boxplot(x = testedf['Household Premium'], orient='h')
+del testedf
+#between 1350 and 2000 are 26 relatively sparse observations. When looking to (...)
+#(...) the box plot of testedf, it is possible to observe the boxplot for (...)
+#(...) the household premium variable with outliers >2000 removed, and it is easy (...)
+#(...) to observe that there is an almonst continuous line of observations until 1350.
+#This values will also be considered outliers, despite observations >2000 being more clear outliers.
+
+#----------
 sb.boxplot(x = df['Health Premium'], orient='h', whis=5) #>500
-sb.boxplot(x = df['Life Premium'], orient='h', whis=5) #>300 ou >350
-sb.boxplot(x = df['Work Premium'], orient='h', whis=5) #>250 ou >300
+
+testedf = df.copy(deep=True)
+testedf = testedf.loc[testedf['Health Premium']<5000]
+sb.boxplot(x = testedf['Health Premium'], orient='h', whis=5) #>500
+del testedf
+#>500 and <5000: 2 observations, clearly observable in the boxplot of testedf (obs >5000 removed)
+#>5000: 2 observations
+
+#----------
+sb.boxplot(x = df['Life Premium'], orient='h') #>300
+sb.boxplot(x = df['Life Premium'], orient='h', whis=5) #>300
+
+#----------
+sb.boxplot(x = df['Work Premium'], orient='h') #>250 ou >300
+sb.boxplot(x = df['Work Premium'], orient='h', whis=5) #>300
+
+#----------
 sb.boxplot(x = df['ClaimsRate'], orient='h', whis=5)
-sb.boxplot(x = df['MonthSalary'], orient='h', whis=5) #>5k ou >10k
+
+#----------
+sb.boxplot(x = df['MonthSalary'], orient='h', whis=5) #>5500
+
+#----------
 sb.boxplot(x = df['CustMonVal'], orient='h', whis=5)
 
 
+
+##Outlier separation
+#----------
 motorOutliers = df.loc[df['Motor Premium']>2000] #6 observations
-#houseOutlier = df.loc[df['Household Premium']>?] 
+#----------
+houseOutliers = df.loc[df['Household Premium']>1350] 
+#----------
 healthOutliers = df.loc[df['Health Premium']>500] #4 observations
+#----------
 lifeOutliers = df.loc[df['Life Premium']>300] #15 observations
+#----------
 workOutliers = df.loc[df['Work Premium']>400] #5 observations
-#claimsOutliers
+#----------
 monthSalaryOutliers = df.loc[df['MonthSalary']>5500] #2 observations
 
 #CMV
@@ -538,44 +577,151 @@ del teste
 #Seems like a very volatile variable
 #Nevertheless, it inclues information about claims (due to indemnifications), which could be more useful (...)
 #(...) to the overall clustering and analysis than Claims Rate, given that claims rate is for a 2 year period only
+#In short, claims rate has a short period when compared with cmv and cmv inclues claims in the formula so...
+
+
+#Remove claims rate and analyze CMV outliers again, keeping in mind that customers with claims will be (...)
+#(...) clearly separated from the other in the cmv distribution.
+
+df = df.drop(columns=['ClaimsRate'])
 
 
 
 
-#custMonValOutliers = df.loc[df['CustMonVal']>2500]
-#custMonValOutliers = df.loc[df['CustMonVal']<-5000]
+##CMV outlier analysis
+#(annual profit) X (number of years that they are a customer) - (acquisition cost) 
+sb.boxplot(x = df['CustMonVal'], orient='h', whis=5)
+
+#----
+#Plot is almost impossible to analyze due to observations below -25000
+testedf = df.copy(deep=True)
+testedf = testedf.loc[testedf['CustMonVal']<-25000]
+del testedf
+#6 observations below -25000
+
+#----
+#Remove obs below -25000 from plot
+testedf = df.copy(deep=True)
+testedf = testedf.loc[testedf['CustMonVal']>-25000]
+sb.boxplot(x = testedf['CustMonVal'], orient='h', whis=5)
+#Remove obs below -5000 and above 5000
+testedf = testedf.loc[testedf['CustMonVal']<5000]
+testedf = testedf.loc[testedf['CustMonVal']>-5000]
+sb.boxplot(x = testedf['CustMonVal'], orient='h', whis=5)
+#Remove obs below -1000 and above 1000
+testedf = testedf.loc[testedf['CustMonVal']<1000]
+testedf = testedf.loc[testedf['CustMonVal']>-1000]
+sb.boxplot(x = testedf['CustMonVal'], orient='h')
+del testedf
+
+#Claims have enormous impact in CMV, and this should not be hidden after outlier treatment.
+#A claim is relatively sporadic, and most customers will have no claims or few claims of little value, (...)
+#(...) but usually, when big claims happen, they have a huge impact, and that huge impact needs to be (...)
+#(...) noticeable in CMV. So, only obs with <-25000 are going to be considered as outliers (too big, will influence a lot more than intended)
+CustMonValOutliers = df.loc[df['CustMonVal']<-25000]
 
 
+#create a dict for outliers
+outliers = {'CustMonValOutliers': CustMonValOutliers.copy(deep=True)}
+outliers['motorOutliers'] = motorOutliers.copy(deep=True)
+outliers['houseOutliers'] = houseOutliers.copy(deep=True)
+outliers['healthOutliers'] = healthOutliers.copy(deep=True)
+outliers['lifeOutliers'] = lifeOutliers.copy(deep=True)
+outliers['workOutliers'] = workOutliers.copy(deep=True)
+outliers['monthSalaryOutliers'] = monthSalaryOutliers.copy(deep=True)
+del CustMonValOutliers
+del motorOutliers
+del houseOutliers
+del healthOutliers
+del lifeOutliers
+del workOutliers
+del monthSalaryOutliers
 
-#-------------------------------------------------------
-#Drop ClaimsRate (time period too short when compared with CMV)
-#And CMV inclues Claims, so...
-#-------------------------------------------------------
+#removing outliers from df
+
+#df: 10251 observations
+
+df = df.loc[df['Motor Premium']<=2000]
+df = df.loc[df['Household Premium']<=1350] 
+df = df.loc[df['Health Premium']<=500]
+df = df.loc[df['Life Premium']<=300]
+df = df.loc[df['Work Premium']<=400]
+df = df.loc[df['MonthSalary']<=5500]
+df = df.loc[df['CustMonVal']>=-25000]
+
+#df: 10186 observations
+#0.63% of observations were considered outliers and were removed
 
 
-
+#***
+#***1.1.7 Final Variable Manipulation***
+#***
 
 
 #manipulate existing variables
 #create new variables
 
+
+#---------------------------------------------------------------------------------------------
+#NOT GOING TO BE DONE, BUT MENTION IN REPORT
 #During the thought for verifying this variable, it became clear that the amount paid by the insurance (...)
 #(...) company could play a different role of the claims rate in the analysis.
 #Then, given that this rate is for two years, it is possible to obtain the value paid by (...)
 #(...) the insurance company in the last two years.
 #(Given that ClaimsRate is for every type of policy)
+#---> Refer claims rate for every type of policy, subsequent analysis and indmenization analysis
+#---------------------------------------------------------------------------------------------
 
-df.columns
-df['x'] = df['ClaimsRate'] * 2 * df['TotalPremiums']
+
+##YearlySalary
+df['YearlySalary'] = df['MonthSalary']*14
+df = df.drop(columns=['MonthSalary'])
+
+
+##YearsAsCustomer
+df['YearsAsCustomer'] = 1998 - df['FirstPYear']
+df = df.drop(columns=['FirstPYear'])
+
+
+##Negative Premium Values
+#There are two possible approaches to deal with negative premium values. Since we are dealing with (...)
+#(...) aggregated values for premiums, there are several possible scenarios:
+#- The value presented in a policy category is the sum of every premium paid by the insured (positive or 0)
+#- The value presented in a policy category is the sum of every premium paid by the insured - value return due to cancelation of one policy (total value is still positive, sum of premiums paid > money given back)
+#- The value presented in a policy category is the sum of every premium paid by the insured - value return due to cancelation of one policy (total value is negative, sum of premiums paid < money given back)
+#- The value presented in a policy category is the sum of every premium paid by the insured - value return due to cancelation of one policy (total value is 0, sum of premiums paid = money given back)
+#- The value presented in a policy category is the sum of money given back to the ensured (negative)
+#Since we have no information about premium values isolated from money returned to the ensured, several issues arise, (...)
+#(...) given that we may be considering for clustering customers with the same values for premiums that are in fact very different.
+#A strategy to reduce this issues could be to transform negative premium values to 0, which would increase the clustering accuracy by (...)
+#(...) removing the weight of value returned and considering only premium values. On the other hand, this strategy cannot be implemented, (...)
+#(...) given that other returns could still be in the data, and that partial removal could bring more disadvantages than advantages.
+
+#--> Negative premium values will be kept
+
+
+##Creation of branches
+#For clustering, it can be useful to perform two approaches, giving two different views:
+#- Absolute values (clustering will occur based on absolute values) => df
+#- Ratios and percentages (clustering will occur based on amount spent in a specific category in comparison with other categories) => df2
+
+#------------------------------------------------------------------
+#It would be useful to create the said branches, but that would imply a different strategy to deal with (...)
+#(...) negative premium values, given that negative premium values will produce inaccurate ratios and totals.
+#This strategy would only be possible, with the desired accuracy, if premium values and returned values to the insured would be separated.
+#------------------------------------------------------------------
+
+#df2 = df.copy(deep=True)
 
 #Creation of TotalPremiums var
-df['TotalPremiums'] = nullPremiumsAsZero['Motor Premium'] + nullPremiumsAsZero['Household Premium'] + nullPremiumsAsZero['Health Premium'] + nullPremiumsAsZero['Life Premium'] + nullPremiumsAsZero['Work Premium'] 
+#df2['TotalPremiums'] = df2['Motor Premium'] + df2['Household Premium'] + df2['Health Premium'] + df2['Life Premium'] + df2['Work Premium'] 
+#motor of first customer 375.85/665.56
 
-#Creating of YearlySalary var and dropping monthsalary
-df['YearlySalary'] = df['MonthSalary']*14
-#monthsalary drop---------------
+#Transformation of premium vars in ratios
+#df2['Motor Premium'] = df2['Motor Premium']/df2['TotalPremiums'] 
+#df2['Household Premium'] = df2['Household Premium']/df2['TotalPremiums'] 
+#df2['Health Premium'] = df2['Health Premium']/df2['TotalPremiums'] 
+#df2['Life Premium'] = df2['Life Premium']/df2['TotalPremiums'] 
+#df2['Work Premium'] = df2['Work Premium']/df2['TotalPremiums'] 
+#df2['PercOfSalaryInPremiums'] = df2['YearlySalary']/df2['TotalPremiums']
 
-
-#Create years as customer
-
-#create ratios for premiums
