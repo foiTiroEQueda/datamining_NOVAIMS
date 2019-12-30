@@ -12,7 +12,8 @@ import numpy as np
 from sklearn.neighbors import KNeighborsClassifier
 import seaborn as sb
 from matplotlib import pyplot as plt
-
+import plotly.graph_objects as go
+from plotly.offline import plot
 
 
 pd.set_option('display.max_columns', 500)

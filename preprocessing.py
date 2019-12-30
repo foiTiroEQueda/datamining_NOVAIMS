@@ -126,10 +126,9 @@ df[df.duplicated(['CID'])]
 ##MonthSalary
 #Salaries below the minimum wage are possible, and without context, it is impossible to know (...)
 #(...) if this value is a salary (particular customer) or profit (company customer).
-#Nevertheless, it is important to analyze each of these cases, in order to determine if this customers (...)
+#Nevertheless, it is important to analyze each of these cases, in order to determine if those customers (...)
 #(...) can be considered in risk for not being able to pay the premiums.
 removedOrModified = {'incomeBelowMinimumWage': df.loc[df['MonthSalary']<618.33].copy(deep=True)}
-
 
 
 ##FirstPYear before BirthYear
@@ -271,6 +270,7 @@ df = df.drop(columns=['index'])
 
 missingValuesForRows = df.isnull().sum(axis=1)
 missingValuesForRows = pd.DataFrame(missingValuesForRows)
+
 missingValuesForRows.drop_duplicates()
 
 #12 variables (excluding customer id)
@@ -311,14 +311,6 @@ df.loc[[9788]] #Motor Premium, Health Premium, Life Premium, Work Premium (House
 #Decide what to do with the 3 observations with 3 missing values, as they are loose observations (no pattern observed)
 
 
-##Assessing the percentage of missing values by variable
-missingValuesForVar = df.isna().sum()/10296*100
-missingValuesForVar.loc[missingValuesForVar>0] 
-#Life Premium is the only variable with more than 1% of missing values (1.01%)
-#No reason to exclude any variable
-
-
-
 
 
 
@@ -341,6 +333,27 @@ df = df.drop([296, 4423])
 df = df.loc[~df.index.isin(missingValuesForRows.loc[missingValuesForRows[0]==4].index)]
 
 
+##Assessing the percentage of missing values by variable
+#---needs to be done after treatment of missing values by observation---
+
+missingValuesForVar = df.isna().sum()/10296*100
+missingValuesForVar.loc[missingValuesForVar>0]
+#Life Premium is the only variable with more than 1% of missing values (1.01%)
+#No reason to exclude any variable
+
+
+x = missingValuesForVar.loc[missingValuesForVar>0].index 
+y = missingValuesForVar.loc[missingValuesForVar>0].values
+
+fig = go.Figure(data=[go.Bar(x=x, y=y, text=y.round(decimals=4),
+            textposition='outside')])
+fig.update_traces(marker_color='rgb(171,121,70)', marker_line_color='rgb(171,121,70)',
+                  marker_line_width=1.5, opacity=0.6)
+fig.update_layout(plot_bgcolor='rgb(255,255,255)', yaxis_title='%', title='Missing Values by Variable in Percentage (%)')
+plot(fig)
+
+
+
 
 ##Premiums
 #In order to avoid hindering the analysis, missing values in premiums should be considered as 0
@@ -360,9 +373,8 @@ correctedObservations_premiums = correctedObservations_premiums.append(df.loc[pd
 correctedObservations_premiums = correctedObservations_premiums.append(df.loc[pd.isnull(df['Work Premium'])])
 correctedObservations_premiums  = correctedObservations_premiums['CID'].drop_duplicates()
 correctedObservations_premiums.count()
-#212 of 10282 observations (2%) are going to be corrected due to missing values in premium variables 
+#212 of 10281 observations (2.06%) are going to be corrected due to missing values in premium variables 
 #(not counting the 13 observations already excluded that had missing values in premium variables)
-
 
 removedOrModified['motorPremiumNull'] = df.loc[df.index.isin(df.loc[pd.isnull(df['Motor Premium'])].index)].copy(deep=True) 
 removedOrModified['householdPremiumNull'] = df.loc[df.index.isin(df.loc[pd.isnull(df['Household Premium'])].index)].copy(deep=True)  
@@ -382,6 +394,7 @@ df['Work Premium'].fillna(0, inplace=True)
 #convert to a boolean variable
 #To minimize the data loss (despite being only 0.2% of all observations):
 #- It is more plausible to assume that, in case of missing value, there is no children
+df['Children'].isna().sum()
 
 removedOrModified['noChildrenInfo'] = df.loc[pd.isnull(df['Children'])].copy(deep=True)
 df['Children'].fillna(0, inplace=True)
@@ -407,6 +420,8 @@ corrMatrix(df)
 #2 - High School
 #3 - BSc/MSc
 #4 - PhD --> Goes to 3, and 3 becomes Higher Education
+df['Educ'].isnull().sum()
+
 
 #Missing values are now marked with 0
 df.loc[df['Educ'].isnull(), 'Educ'] = "0"
@@ -441,6 +456,7 @@ df = df.loc[df['Educ']!=0]
 #(...) (e.g. Let’s assume that females generally  (...)
 #(...) don’t want to reveal their ages! Here the missing value in age variable is impacted by gender variable)
 
+df['MonthSalary'].isna().sum()
 
 #fill with median
 #There isn't enough variables to accuratly predict values for MonthSalary
@@ -463,6 +479,7 @@ df['MonthSalary'].fillna((df['MonthSalary'].median()), inplace=True)
 #The fact that a certain value is missing has nothing to do with its hypothetical (...)
 #(...) value and with the values of other variables
 #Best option is to remove
+df['FirstPYear'].isna().sum()
 
 removedOrModified['noFirstPYearinfo'] = df.loc[pd.isnull(df['FirstPYear'])].copy(deep=True)
 df = df.loc[~pd.isnull(df['FirstPYear'])]
@@ -487,30 +504,47 @@ Q3 = df.quantile(0.75)
 IQR = Q3 - Q1
 outdf = df[(df < (Q1 - 1.5 * IQR)) |(df > (Q3 + 1.5 * IQR))]
 
+outdfForGraph = pd.DataFrame(columns=['var', 'mv'])
 
 #Number of observations that fall beyond the defined thresholds, by variable
 
 for cv in outdf.columns.values:
     if len(outdf[cv].dropna())>0:
+        outdfForGraph = outdfForGraph.append({'var': cv, 'mv': str(len(outdf[cv].dropna()))}, ignore_index=True)
         print(cv)
         print(str(len(outdf[cv].dropna())) + " out of " + str(len(outdf[cv])) + " (" + str(round(len(outdf[cv].dropna())/len(outdf[cv])*100,2)) + "%)")
         print("---------------------------------------------------------")
 
 #Take a better look at household, life and work
+outdfForGraph = outdfForGraph.astype({'mv': 'int64'})
+
+x = outdfForGraph['var'] 
+y = outdfForGraph['mv']
+
+fig = go.Figure(data=[go.Bar(x=x, y=y, text=y.round(decimals=4),
+            textposition='outside')])
+fig.update_traces(marker_color='rgb(171,121,70)', marker_line_color='rgb(171,121,70)',
+                  marker_line_width=1.5, opacity=0.6)
+fig.update_layout(plot_bgcolor='rgb(255,255,255)', yaxis_title='%', title='Number of observations that fall outside the defined thresholds, by variable')
+plot(fig)
+
 
 ##Boxplots
 
 
 #----------
-sb.boxplot(x = df['Motor Premium'], orient='h', whis=10) #>2000
-
+sb.boxplot(x = df['Motor Premium'], orient='h', whis=10, boxprops={'color':'#ab7946'}) #>2000
+           
 #----------
-sb.boxplot(x = df['Household Premium'], orient='h', whis=5) #>2000
+sb.boxplot(x = df['Household Premium'], orient='h', whis=5, boxprops={'color':'#ab7946'}) #>2000
 
 testedf = df.copy(deep=True)
 testedf = testedf.loc[testedf['Household Premium']<2000]
-sb.boxplot(x = testedf['Household Premium'], orient='h')
+sb.boxplot(x = testedf['Household Premium'], orient='h', boxprops={'color':'#ab7946'})
 del testedf
+
+
+
 #between 1350 and 2000 are 26 relatively sparse observations. When looking to (...)
 #(...) the box plot of testedf, it is possible to observe the boxplot for (...)
 #(...) the household premium variable with outliers >2000 removed, and it is easy (...)
@@ -518,31 +552,35 @@ del testedf
 #This values will also be considered outliers, despite observations >2000 being more clear outliers.
 
 #----------
-sb.boxplot(x = df['Health Premium'], orient='h', whis=5) #>500
+sb.boxplot(x = df['Health Premium'], orient='h', whis=5, boxprops={'color':'#ab7946'}) #>500
 
 testedf = df.copy(deep=True)
 testedf = testedf.loc[testedf['Health Premium']<5000]
-sb.boxplot(x = testedf['Health Premium'], orient='h', whis=5) #>500
+sb.boxplot(x = testedf['Health Premium'], orient='h', whis=5, boxprops={'color':'#ab7946'}) #>500
 del testedf
 #>500 and <5000: 2 observations, clearly observable in the boxplot of testedf (obs >5000 removed)
 #>5000: 2 observations
 
 #----------
-sb.boxplot(x = df['Life Premium'], orient='h') #>300
-sb.boxplot(x = df['Life Premium'], orient='h', whis=5) #>300
+sb.boxplot(x = df['Life Premium'], orient='h', boxprops={'color':'#ab7946'}) #>300
+sb.boxplot(x = df['Life Premium'], orient='h', whis=5, boxprops={'color':'#ab7946'}) #>300
 
 #----------
-sb.boxplot(x = df['Work Premium'], orient='h') #>250 ou >300
-sb.boxplot(x = df['Work Premium'], orient='h', whis=5) #>300
+sb.boxplot(x = df['Work Premium'], orient='h', boxprops={'color':'#ab7946'}) #>250 ou >300
+sb.boxplot(x = df['Work Premium'], orient='h', whis=5, boxprops={'color':'#ab7946'}) #>300
 
 #----------
-sb.boxplot(x = df['ClaimsRate'], orient='h', whis=5)
+sb.boxplot(x = df['ClaimsRate'], orient='h', whis=5, boxprops={'color':'#ab7946'})
 
 #----------
-sb.boxplot(x = df['MonthSalary'], orient='h', whis=5) #>5500
+sb.boxplot(x = df['MonthSalary'], orient='h', whis=5, boxprops={'color':'#ab7946'}) #>5500
+testedf = df.copy(deep=True)
+testedf = testedf.loc[testedf['MonthSalary']<10000]
+sb.boxplot(x = testedf['MonthSalary'], orient='h', whis=5, boxprops={'color':'#ab7946'}) #>500
+del testedf
 
 #----------
-sb.boxplot(x = df['CustMonVal'], orient='h', whis=5)
+sb.boxplot(x = df['CustMonVal'], orient='h', whis=5, boxprops={'color':'#ab7946'})
 
 
 
@@ -564,10 +602,13 @@ monthSalaryOutliers = df.loc[df['MonthSalary']>5500] #2 observations
 #https://www.irmi.com/term/insurance-definitions/indemnification
 #CMV is highly affected by indemnification. If it occours, CMV most likely will drop below 0
 #This variable is only really useful for cases where no indemnification has occured.
+teste = df.loc[df['CustMonVal']>-2000]
+sb.boxplot(x = teste['CustMonVal'], orient='h', whis=5, boxprops={'color':'#ab7946'})
+del teste
 
 teste = df.loc[df['CustMonVal']<2500]
 teste = teste.loc[teste['CustMonVal']>-10000]
-sb.boxplot(x = teste['CustMonVal'], orient='h', whis=5)
+sb.boxplot(x = teste['CustMonVal'], orient='h', whis=5, boxprops={'color':'#ab7946'})
 del teste
 teste = df.loc[df['CustMonVal']>2500]
 del teste
@@ -605,7 +646,7 @@ testedf = df.copy(deep=True)
 testedf = testedf.loc[testedf['CustMonVal']>-25000]
 sb.boxplot(x = testedf['CustMonVal'], orient='h', whis=5)
 #Remove obs below -5000 and above 5000
-testedf = testedf.loc[testedf['CustMonVal']<5000]
+testedf = testedf.loc[testedf['CustMonVal']<2500]
 testedf = testedf.loc[testedf['CustMonVal']>-5000]
 sb.boxplot(x = testedf['CustMonVal'], orient='h', whis=5)
 #Remove obs below -1000 and above 1000
@@ -618,7 +659,9 @@ del testedf
 #A claim is relatively sporadic, and most customers will have no claims or few claims of little value, (...)
 #(...) but usually, when big claims happen, they have a huge impact, and that huge impact needs to be (...)
 #(...) noticeable in CMV. So, only obs with <-25000 are going to be considered as outliers (too big, will influence a lot more than intended)
-CustMonValOutliers = df.loc[df['CustMonVal']<-25000]
+#-->will hinder the analysis, below -2000 is all outliers
+CustMonValOutliers = df.loc[df['CustMonVal']<-2000]
+CustMonValOutliers = CustMonValOutliers.append(df.loc[df['CustMonVal']>3000])
 
 
 #create a dict for outliers
@@ -639,7 +682,7 @@ del monthSalaryOutliers
 
 #removing outliers from df
 
-#df: 10251 observations
+#df: 10248 observations
 
 df = df.loc[df['Motor Premium']<=2000]
 df = df.loc[df['Household Premium']<=1350] 
@@ -647,10 +690,13 @@ df = df.loc[df['Health Premium']<=500]
 df = df.loc[df['Life Premium']<=300]
 df = df.loc[df['Work Premium']<=400]
 df = df.loc[df['MonthSalary']<=5500]
-df = df.loc[df['CustMonVal']>=-25000]
+df = df.loc[df['CustMonVal']>=-2000]
+df = df.loc[df['CustMonVal']<=3000]
 
-#df: 10186 observations
-#0.63% of observations were considered outliers and were removed
+
+#df: 10178 observations
+
+#0.68% of observations were considered outliers and were removed
 
 
 #***
@@ -673,14 +719,13 @@ df = df.loc[df['CustMonVal']>=-25000]
 #---------------------------------------------------------------------------------------------
 
 
-##YearlySalary
-df['YearlySalary'] = df['MonthSalary']*14
+##AnnualSalary
+df['AnnualSalary'] = df['MonthSalary']*14
 df = df.drop(columns=['MonthSalary'])
 
 
 ##YearsAsCustomer
 df['YearsAsCustomer'] = 1998 - df['FirstPYear']
-df = df.drop(columns=['FirstPYear'])
 
 
 ##Negative Premium Values
@@ -693,6 +738,7 @@ df = df.drop(columns=['FirstPYear'])
 #- The value presented in a policy category is the sum of money given back to the ensured (negative)
 #Since we have no information about premium values isolated from money returned to the ensured, several issues arise, (...)
 #(...) given that we may be considering for clustering customers with the same values for premiums that are in fact very different.
+
 #A strategy to reduce this issues could be to transform negative premium values to 0, which would increase the clustering accuracy by (...)
 #(...) removing the weight of value returned and considering only premium values. On the other hand, this strategy cannot be implemented, (...)
 #(...) given that other returns could still be in the data, and that partial removal could bring more disadvantages than advantages.
@@ -725,3 +771,53 @@ df = df.drop(columns=['FirstPYear'])
 #df2['Work Premium'] = df2['Work Premium']/df2['TotalPremiums'] 
 #df2['PercOfSalaryInPremiums'] = df2['YearlySalary']/df2['TotalPremiums']
 
+
+#---------- DATA CONTEXT CHARTS --------------------
+
+df['FirstPYear'] = df['FirstPYear'].astype('int64')
+
+yearfreq = df.groupby('FirstPYear').count()['CID']
+childfreq = df.groupby('Children').count()['CID']
+educfreq = df.groupby('Educ').count()['CID']
+livingareafreq = df.groupby('LivingArea').count()['CID']
+
+binsMSC = pd.IntervalIndex.from_tuples([(4000, 10000), (10001, 20000), (20001, 30000), (30001, 40000), (40001, 50000), (50001, 60000), (60001, 70295)])
+annualSalaryClasses = pd.cut(df['AnnualSalary'], bins=binsMSC)
+annualsalaryfreq = annualSalaryClasses.groupby(annualSalaryClasses).count()
+annualsalaryfreq.index = annualsalaryfreq.index.map(str)
+
+
+
+#customers by year
+x = yearfreq.index
+y = yearfreq.values
+
+plotlyOnTheGo(x, y)
+
+#children
+x = childfreq.index
+y = childfreq.values
+
+plotlyOnTheGo(x, y)
+
+#educ
+x = educfreq.index
+y = educfreq.values
+
+plotlyOnTheGo(x, y)
+
+#livingArea
+x = livingareafreq.index
+y = livingareafreq.values
+
+plotlyOnTheGo(x, y)
+
+#annualsalary
+x = annualsalaryfreq.index
+y = annualsalaryfreq.values
+
+plotlyOnTheGo(x, y)
+
+
+#---
+df = df.drop(columns=['FirstPYear'])
