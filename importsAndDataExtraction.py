@@ -23,6 +23,8 @@ from sklearn.metrics import silhouette_samples, silhouette_score
 from sklearn.preprocessing import StandardScaler
 from sklearn.cluster import AgglomerativeClustering
 import scipy.cluster.hierarchy as sch
+from scipy.cluster.hierarchy import dendrogram, linkage
+
 
 
 
