@@ -14,6 +14,17 @@ import seaborn as sb
 from matplotlib import pyplot as plt
 import plotly.graph_objects as go
 from plotly.offline import plot
+import matplotlib.cm as cm
+from sklearn.cluster import KMeans
+import pylab as pl
+from sklearn.cluster import KMeans
+from sklearn.metrics import silhouette_score
+from sklearn.metrics import silhouette_samples, silhouette_score
+from sklearn.preprocessing import StandardScaler
+from sklearn.cluster import AgglomerativeClustering
+import scipy.cluster.hierarchy as sch
+
+
 
 
 pd.set_option('display.max_columns', 500)
