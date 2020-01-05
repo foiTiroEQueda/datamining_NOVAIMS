@@ -41,10 +41,43 @@ lobClusters.columns = Lob_Norm.columns
 
 
 
-silhouette_avg = silhouette_score(Lob_Norm, kmeans.labels_)
+silhouette_avg_lob = silhouette_score(Lob_Norm, kmeans.labels_)
 
-print("For n_clusters =", n_clusters,",the average silhouette_score is :", silhouette_avg)
+print("For n_clusters =", n_clusters,",the average silhouette_score is :", silhouette_avg_lob)
 #For n_clusters = 3 ,the average silhouette_score is : 0.34 (aprox)
 #justify with what is said on the report about data quality hindering clustering quality
 
+#-------------------------------------------------
 #tried k means with large k and hierarchical on top of it, didn't work, dendrogram was not very clear and clustering solutions (for k=2 and k=5) were terrible
+#-------------------------------------------------
+
+#obs in each cluster
+obsInEachClusterLOB = pd.DataFrame(kmeans.labels_)
+obsInEachClusterLOB.columns = ['label']
+obsInEachClusterLOB_0 = len(obsInEachClusterLOB.loc[obsInEachClusterLOB['label']==0])
+obsInEachClusterLOB_1 = len(obsInEachClusterLOB.loc[obsInEachClusterLOB['label']==1])
+obsInEachClusterLOB_2 = len(obsInEachClusterLOB.loc[obsInEachClusterLOB['label']==2])
+
+del obsInEachClusterLOB
+obsInEachClusterLOB = pd.DataFrame([obsInEachClusterLOB_0, obsInEachClusterLOB_1, obsInEachClusterLOB_2])
+del obsInEachClusterLOB_0
+del obsInEachClusterLOB_1
+del obsInEachClusterLOB_2
+
+
+lob_labels = pd.DataFrame(kmeans.labels_)
+#
+#
+#
+#
+#
+#
+#
+#-------------------------------------------------------
+#                   Variables Guide                  
+#-------------------------------------------------------
+#
+#obsInEachClusterLOB - Nr of obs per cluster
+#lob_labels - Labels
+#lobClusters - Centroids
+#silhouette_avg_lob - Silhouette Score

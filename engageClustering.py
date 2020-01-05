@@ -14,8 +14,9 @@
 #-------------------------------------------------------
 #Categorical Variables: Educ, LivingArea, Children
 #Numerical Variables: YearsAsCustomer, AnnualSalary, CustMonVal
-engageCatVar = df[['Educ', 'LivingArea', 'Children']].copy(deep=True)
+engageCatVar = df[['Educ', 'LivingArea', 'Children']].copy(deep=True).astype(str)
 engageNumVar = df[['YearsAsCustomer', 'AnnualSalary', 'CustMonVal']].copy(deep=True)
+engageCatVar['Children'] = (engageCatVar['Children'] == 'True').astype(int)
 #
 #
 #
@@ -63,8 +64,8 @@ engageNumClustersKMeans = pd.DataFrame(engageNumClustersKMeans)
 engageNumClustersKMeans.columns = engageNumVar_Norm.columns
 
 #silhouette score
-silhouette_avg = silhouette_score(engageNumVar_Norm, kmeansEngageNumSolo.labels_)
-print("For n_clusters =", n_clusters,",the average silhouette_score is :", silhouette_avg)
+silhouette_avg_engagenum = silhouette_score(engageNumVar_Norm, kmeansEngageNumSolo.labels_)
+print("For n_clusters =", n_clusters,",the average silhouette_score is :", silhouette_avg_engagenum)
 #For n_clusters = 3 ,the average silhouette_score is : 0.24651668279691658
 
 #obs in each cluster
@@ -78,6 +79,9 @@ obsInEachCluster_k3 = pd.DataFrame([obsInEachCluster_k3_0, obsInEachCluster_k3_1
 del obsInEachCluster_k3_0
 del obsInEachCluster_k3_1
 del obsInEachCluster_k3_2
+
+#labels
+engagenumlabels = pd.DataFrame(kmeansEngageNumSolo.labels_)
 
 
 #---------------------- 4 clusters ---------
@@ -184,5 +188,151 @@ engageClusters = np.round(engageClustered.groupby(['clust']).mean(),decimals=2)
 #-------------------------------------------------------
 #                  Categorical Variables                  
 #-------------------------------------------------------
+#Given the random init (or any other init), it is not possible to replicate the same clustering solution
+#For that, no loop will be built to evaluate silhouette scores. Instead, clustering solutions will be kept in variables(...)
+#(...) and the best will be used
+
+##>>>> With LivingArea
+#......... 2 clusters ....................
+n_clusters=2
+# define the k-modes model
+km2 = KModes(n_clusters=n_clusters, init='random', n_init=5, verbose=1)
+
+# fit the clusters 
+clusterskmodes2 = km2.fit_predict(engageCatVar)
+
+silhouette_avg2 = silhouette_score(engageCatVar, km2.labels_)
+
+#......... 3 clusters ....................
+n_clusters=3
+# define the k-modes model
+km3 = KModes(n_clusters=n_clusters, init='random', n_init=5, verbose=1)
+
+# fit the clusters 
+clusterskmodes3 = km3.fit_predict(engageCatVar)
+
+silhouette_avg3 = silhouette_score(engageCatVar, km3.labels_)
 
 
+#......... 4 clusters ....................
+n_clusters=4
+# define the k-modes model
+km4 = KModes(n_clusters=n_clusters, init='random', n_init=5, verbose=1)
+
+# fit the clusters 
+clusterskmodes4 = km4.fit_predict(engageCatVar)
+
+silhouette_avg4 = silhouette_score(engageCatVar, km4.labels_)
+
+print(silhouette_avg2)
+print(silhouette_avg3)
+print(silhouette_avg4)
+#0.2373255618792776
+#0.33670269505630585
+#0.16630893399074934
+
+KModesCentroids = pd.DataFrame(km3.cluster_centroids_, columns = ["Educ","LivingArea","Children"])
+print(KModesCentroids)
+
+KModesCentroids2 = pd.DataFrame(km2.cluster_centroids_, columns = ["Educ","LivingArea","Children"])
+print(KModesCentroids2)
+
+KModesCentroids4 = pd.DataFrame(km4.cluster_centroids_, columns = ["Educ","LivingArea","Children"])
+print(KModesCentroids4)
+
+
+
+
+#------------------------------------------------------------------------
+engageCatVarA = engageCatVar.drop(columns=['LivingArea'])
+
+##>>>> Without LivingArea
+#......... 2 clusters ....................
+n_clusters=2
+# define the k-modes model
+km2a = KModes(n_clusters=n_clusters, init='random', n_init=5, verbose=1)
+
+# fit the clusters 
+clusterskmodes2a = km2a.fit_predict(engageCatVarA)
+
+silhouette_avg2a = silhouette_score(engageCatVarA, km2a.labels_)
+
+#......... 3 clusters ....................
+n_clusters=3
+# define the k-modes model
+km3a = KModes(n_clusters=n_clusters, init='random', n_init=5, verbose=1)
+
+# fit the clusters 
+clusterskmodes3a = km3a.fit_predict(engageCatVarA)
+
+silhouette_avg3a = silhouette_score(engageCatVarA, km3a.labels_)
+
+
+#......... 4 clusters ....................
+n_clusters=4
+# define the k-modes model
+km4a = KModes(n_clusters=n_clusters, init='random', n_init=5, verbose=1)
+
+# fit the clusters 
+clusterskmodes4a = km4a.fit_predict(engageCatVarA)
+
+silhouette_avg4a = silhouette_score(engageCatVarA, km4a.labels_)
+
+print(silhouette_avg2a)
+print(silhouette_avg3a)
+print(silhouette_avg4a)
+#0.39038562304700297
+#0.6680004716683238
+#0.6976724262029244
+
+KModesCentroidsA = pd.DataFrame(km3a.cluster_centroids_, columns = ["Educ","Children"])
+print(KModesCentroidsA)
+
+KModesCentroids2A = pd.DataFrame(km2a.cluster_centroids_, columns = ["Educ","Children"])
+print(KModesCentroids2A)
+
+KModesCentroids4A = pd.DataFrame(km4a.cluster_centroids_, columns = ["Educ","Children"])
+print(KModesCentroids4A)
+
+#>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>4 clusters - clusterskmodes4a
+
+engageWithLabels= VarsEngage.copy(deep=True)
+engageWithLabels["CategoricalClusters"]=clusterskmodes4a
+
+#obs in each cluster
+obsInEachClusterCat = engageWithLabels["CategoricalClusters"]
+obsInEachClusterCat = pd.DataFrame(obsInEachClusterCat)
+obsInEachClusterCat.columns = ['label']
+obsInEachClusterCat_0 = len(obsInEachClusterCat.loc[obsInEachClusterCat['label']==0])
+obsInEachClusterCat_1 = len(obsInEachClusterCat.loc[obsInEachClusterCat['label']==1])
+obsInEachClusterCat_2 = len(obsInEachClusterCat.loc[obsInEachClusterCat['label']==2])
+obsInEachClusterCat_3 = len(obsInEachClusterCat.loc[obsInEachClusterCat['label']==3])
+
+del obsInEachClusterCat
+obsInEachClusterCat = pd.DataFrame([obsInEachClusterCat_0, obsInEachClusterCat_1, obsInEachClusterCat_2, obsInEachClusterCat_3])
+del obsInEachClusterCat_0
+del obsInEachClusterCat_1
+del obsInEachClusterCat_2
+del obsInEachClusterCat_3
+#
+#
+#
+#
+#
+#
+#
+#-------------------------------------------------------
+#                   Variables Guide                  
+#-------------------------------------------------------
+#
+#>>Categorical
+#obsInEachClusterCat - Nr of obs per cluster
+#clusterskmodes4a - Labels
+#KModesCentroids4A - Centroids
+#silhouette_avg4a - Silhouette Score
+#
+#>>Numerical
+#obsInEachCluster_k3 - Nr of obs per cluster
+#engagenumlabels - Labels
+#engageNumClustersKMeans - Centroids
+#silhouette_avg_engagenum - Silhouette Score
