@@ -25,6 +25,10 @@ from sklearn.cluster import AgglomerativeClustering
 import scipy.cluster.hierarchy as sch
 from scipy.cluster.hierarchy import dendrogram, linkage
 from kmodes.kmodes import KModes
+from sklearn.neighbors import NearestNeighbors
+from sklearn.cluster import DBSCAN
+from sklearn import metrics
+from sklearn.cluster import MeanShift, estimate_bandwidth
 
 
 

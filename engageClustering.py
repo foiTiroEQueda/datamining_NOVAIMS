@@ -39,7 +39,7 @@ for i in range(1, 11):
     kmeansElbow = KMeans(n_clusters=i, init='k-means++', max_iter=200, n_init=5, random_state=0)
     kmeansElbow.fit(engageNumVar_Norm)
     wcss.append(kmeansElbow.inertia_)
-plt.plot(range(1, 11), wcss)
+plt.plot(range(1, 11), wcss, '#ab7946')
 plt.title('Elbow Graph')
 plt.xlabel('Number of clusters')
 plt.ylabel('WCSS')
@@ -192,6 +192,7 @@ engageClusters = np.round(engageClustered.groupby(['clust']).mean(),decimals=2)
 #For that, no loop will be built to evaluate silhouette scores. Instead, clustering solutions will be kept in variables(...)
 #(...) and the best will be used
 
+#------------------------------------------------------------------------
 ##>>>> With LivingArea
 #......... 2 clusters ....................
 n_clusters=2
@@ -244,9 +245,10 @@ print(KModesCentroids4)
 
 
 #------------------------------------------------------------------------
+##>>>> Without LivingArea
+
 engageCatVarA = engageCatVar.drop(columns=['LivingArea'])
 
-##>>>> Without LivingArea
 #......... 2 clusters ....................
 n_clusters=2
 # define the k-modes model
