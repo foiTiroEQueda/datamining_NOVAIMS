@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-#<raw version>
+#<garbage, don't use>
 
 #Self Organizing Maps
    
