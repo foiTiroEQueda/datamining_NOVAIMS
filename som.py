@@ -1,4 +1,9 @@
 # -*- coding: utf-8 -*-
+"""
+Created on Sat Jan  4 15:49:31 2020
+
+@author: Sofia Cunha
+"""
 
 #<garbage, don't use>
 
