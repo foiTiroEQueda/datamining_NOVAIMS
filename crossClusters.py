@@ -124,7 +124,6 @@ engageFrequency['NumClust0'] = engageFrequency['NumClust0']/2808
 engageFrequency['NumClust1'] = engageFrequency['NumClust1']/3739
 engageFrequency['NumClust2'] = engageFrequency['NumClust2']/3514
 
-#>>>should not be crossed
 
 #********************************************************************************************************************************
 #                    Lob and Engage Cross
