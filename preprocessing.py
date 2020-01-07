@@ -70,7 +70,7 @@ df['FirstPYear'].drop_duplicates()
 df['MonthSalary'].describe()
 #Not enough to identify potential errors
 
-df.loc[df['MonthSalary']<618.33]
+df.loc[df['MonthSalary']<530]
 
 
 ##LivingArea
@@ -128,7 +128,7 @@ df[df.duplicated(['CID'])]
 #(...) if this value is a salary (particular customer) or profit (company customer).
 #Nevertheless, it is important to analyze each of these cases, in order to determine if those customers (...)
 #(...) can be considered in risk for not being able to pay the premiums.
-removedOrModified = {'incomeBelowMinimumWage': df.loc[df['MonthSalary']<618.33].copy(deep=True)}
+removedOrModified = {'incomeBelowMinimumWage': df.loc[df['MonthSalary']<530].copy(deep=True)}
 
 
 ##FirstPYear before BirthYear
