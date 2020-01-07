@@ -34,6 +34,18 @@
 #                    Engage Cross
 #********************************************************************************************************************************
 #Lifetime value = (annual profit from the customer) X (number of years that they are a customer) - (acquisition cost) 
+df_clustered = df.copy(deep=True)
+print(len(df_clustered))
+print(len(lob_labels))
+print(len(clusterskmodes4))
+print(len(engagenumlabels))
+
+
+df_clustered['LOB_Clusters'] = lob_labels[[0]]
+df_clustered['EngageCategorical_Clusters'] = pd.DataFrame(clusterskmodes4)[[0]]
+df_clustered['EngageNumerical_Clusters'] = engagenumlabels[[0]]
+
+df_clustered = df_clustered.drop(columns=['Motor Premium', 'Household Premium', 'Health Premium', 'Life Premium', 'Work Premium', 'Educ', 'LivingArea', 'Children', 'CustMonVal', 'AnnualSalary', 'YearsAsCustomer'])
 
 df_clustered_agg_engage = df_clustered.drop(columns=['CID'])
 df_clustered_agg_engage = df_clustered_agg_engage.drop(columns=['LOB_Clusters'])
@@ -119,7 +131,7 @@ engageFrequency['NumClust2'] = engageFrequency['NumClust2']/3514
 #********************************************************************************************************************************
 
 
-#Work Bench [review this]
+#Work Bench
 df_clustered = df.copy(deep=True)
 print(len(df_clustered))
 print(len(lob_labels))
