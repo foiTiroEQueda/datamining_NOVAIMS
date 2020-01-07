@@ -29,8 +29,19 @@ from sklearn.neighbors import NearestNeighbors
 from sklearn.cluster import DBSCAN
 from sklearn import metrics
 from sklearn.cluster import MeanShift, estimate_bandwidth
-
-
+from sklearn import preprocessing
+from sklearn.model_selection import cross_val_score
+from sklearn import tree
+from sklearn.tree import DecisionTreeClassifier, plot_tree
+from sklearn.model_selection import train_test_split 
+from dtreeplt import dtreeplt
+import graphviz 
+from sklearn.tree import DecisionTreeClassifier
+from sklearn.model_selection import train_test_split
+from sklearn.tree import export_graphviz
+from sklearn.externals.six import StringIO  
+from IPython.display import Image  
+import pydotplus
 
 
 
